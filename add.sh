@@ -7,7 +7,8 @@ fi
 a=""
 while [[ "$a" != "o" ]] && [[ "$a" != "t" ]] ; 
 do
-    echo "[o]urs or [t]heirs?" && read a
+	echo $FILE
+	echo "[o]urs or [t]heirs?" && read a
 done
 
 #echo $a
