@@ -1,3 +1,4 @@
+kernel/power
 drivers/cpufreq
 drivers/usb
 arch/arm/
@@ -42,3 +43,4 @@ drivers/telephony
 drivers/thermal
 drivers/usb
 drivers/watchdog
+include/linux/usb

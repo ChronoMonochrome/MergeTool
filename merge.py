@@ -5,6 +5,11 @@ import subprocess
 def bash_command(cmd):
 	subprocess.Popen(cmd, shell=True, executable='/bin/bash')
 
+def nano(files):
+	for f in files:
+		subprocess.call(['nano', f])
+	#subprocess.Popen(cmd, shell=True, executable='/bin/nano')
+
 def startswith_any(s, l):
 	if not s:
 		return ""
@@ -49,13 +54,19 @@ def main():
 	else:
 		buf += "true && "
 
+
 	s = "\n".join(unmerged)
 	open("unmerged_new.txt", "w").write(s)
 	buf += "mv unmerged_new.txt unmerged.txt"
 	print(buf)
-	if not unmerged:
-		bash_command(buf)
-	print(s)
+	bash_command(buf)
+
+	#buf += "nano %s && " % s
+	if unmerged:
+		nano(unmerged)
+	#if not unmerged:
+	#bash_command(buf)
+	#print(s)
 	#buf += "echo %s"
 
 if __name__ == "__main__":

@@ -28,6 +28,7 @@ arch/tile
 arch/um
 arch/x86
 arch/xtens
+arch/unicore
 sound/usb
 drivers/acpi
 drivers/ata
@@ -137,3 +138,18 @@ drivers/vme
 drivers/w1
 drivers/xen
 drivers/zorro
+tools
+fs/nfs
+fs/pstore
+kernel/events
+sound/i2c
+fs/hpfs/
+fs/udf/
+sound/drivers
+fs/9p
+fs/ext3
+fs/gfs
+fs/jfs
+fs/ocfs
+fs/xfs
+
