@@ -11,9 +11,11 @@ Usage:
 Flags:
 </b></h2>
 <pre>
- -d, --dry-run - don't actually do anything, just display what would happen
- -q, --quiet   - run quietly
- -v, --verbose - verbose output.
+ -d, --dry-run    - don't actually do anything, just display what would happen
+ -h, --help       - show this help message
+ -n, --no-prompts - don't prompt for conflicts resolution
+ -q, --quiet      - run quietly
+ -v, --verbose    - verbose output.
 </pre>
 
 The tool will do `git checkout --ours' (`git checkout --theirs')

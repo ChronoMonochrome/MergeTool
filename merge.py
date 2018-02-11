@@ -3,11 +3,25 @@
 import os, sys
 import subprocess
 
+class bcolors:
+	HEADER = '\033[95m'
+	OKBLUE = '\033[94m'
+	OKGREEN = '\033[92m'
+	WARNING = '\033[93m'
+	ERROR = '\033[91m'
+	ENDC = '\033[0m'
+	BOLD = '\033[1m'
+	UNDERLINE = '\033[4m'
+
+error_fmt = lambda s: "%s%s%s" % (bcolors.ERROR, s, bcolors.ENDC)
+
 DRYRUN = {"--dry-run": "-d"}
 VERBOSE = {"--verbose": "-v"}
+NOPROMPTS = {"--no-prompts": "-n"}
 QUIET = {"--quiet": "-q"}
+HELP = {"--help": "-h"}
 
-valid_flags = [DRYRUN, VERBOSE, QUIET]
+valid_flags = [DRYRUN, VERBOSE, QUIET, HELP, NOPROMPTS]
 
 def bash_command(cmd):
 	subprocess.Popen(cmd, shell=True, executable='/bin/bash')
@@ -15,7 +29,6 @@ def bash_command(cmd):
 def nano(files):
 	for f in files:
 		subprocess.call(['nano', f])
-	#subprocess.Popen(cmd, shell=True, executable='/bin/nano')
 
 def startswith_any(s, l):
 	if not s:
@@ -28,6 +41,38 @@ def startswith_any(s, l):
 			return s
 	return ""
 
+def usage(err_msg = ""):
+	buf = \
+'''MergeTool: a simple git merge tool.
+
+Usage:
+
+
+ ./merge.py [flags]
+
+
+Flags:
+
+
+ -d, --dry-run    - don't actually do anything, just display what would happen
+ -h, --help       - show this help message
+ -n, --no-prompts - don't prompt for conflicts resolution
+ -q, --quiet      - run quietly
+ -v, --verbose    - verbose output.
+
+
+The tool will do `git checkout --ours' (`git checkout --theirs')
+for any files/directories specified in ours.txt (theirs.txt).
+
+Note that flags passing like "-dv" is not supported, use "-d -v" instead.%s'''
+
+	if err_msg:
+		buf %= ("\n\n" + err_msg)
+
+	print(buf)
+
+	exit()
+
 def main(flags = []):
 	ours_list = [i for i in open("ours.txt", "rb").read().split("\n") if i]
 	theirs_list = [i for i in open("theirs.txt", "rb").read().split("\n") if i]
@@ -36,6 +81,11 @@ def main(flags = []):
 	_flag_quiet = QUIET in flags
 	_flag_verbose = VERBOSE in flags
 	_flag_dryrun = DRYRUN in flags
+	_flag_help = HELP in flags
+	_flag_noprompts = NOPROMPTS in flags
+
+	if _flag_help:
+		usage()
 
 	if not unmerged:
 		if not _flag_quiet:
@@ -91,7 +141,11 @@ def main(flags = []):
 	if not (_flag_dryrun or _flag_quiet) and unmerged:
 		print("The following files needs merging: \n%s\n" % s)
 		try:
-			_start_nano = raw_input("Do you want to open these files in nano? [y]/n\n")
+			_start_nano = "y"
+
+			if not _flag_noprompts:
+				_start_nano = raw_input("Do you want to open these files in nano? [y]/n\n")
+
 			if _start_nano != "n":
 				nano(unmerged)
 		except KeyboardInterrupt:
@@ -99,11 +153,18 @@ def main(flags = []):
 
 if __name__ == "__main__":
 	flags = []
-	_args = sys.argv
+	_args = sys.argv[1:]
 
-	for flag in valid_flags:
-		alias, key = list(flag.items())[0]
-		if alias in _args or key in _args:
-			flags.append(flag)
+	for arg in _args:
+		arg_valid = False
+		for flag in valid_flags:
+			alias, key = list(flag.items())[0]
+			if arg in [alias, key]:
+				arg_valid = True
+				flags.append(flag)
+				break
+
+		if not arg_valid:
+			usage(error_fmt("Error: Unknown flag: %s" % arg))
 
 	main(flags)
