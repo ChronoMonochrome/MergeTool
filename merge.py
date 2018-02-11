@@ -24,7 +24,11 @@ def startswith_any(s, l):
 def main():
 	ours_list = [i for i in open("ours.txt", "rb").read().split("\n") if i]
 	theirs_list = [i for i in open("theirs.txt", "rb").read().split("\n") if i]
-	unmerged = subprocess.check_output("git diff --name-only --diff-filter=U".split(" ")).split("\n")
+	unmerged = [i for i in subprocess.check_output("git diff --name-only --diff-filter=U".split(" ")).split("\n") if i]
+
+	if not unmerged:
+		print("No files needs merging.")
+		exit()
 
 	to_ours, to_theirs = [], []
 	for f in unmerged:
@@ -57,12 +61,18 @@ def main():
 	if not unmerged:
 		buf += "git commit --no-edit"
 
-	s = "\n".join(unmerged)
+	s = "\n\t" + "\n\t".join(unmerged)
 	print(buf)
 	bash_command(buf)
 
 	if unmerged:
-		nano(unmerged)
+		print("The following files needs merging: \n%s\n" % s)
+		try:
+			_start_nano = raw_input("Do you want to open these files in nano? [y]/n\n")
+			if _start_nano != "n":
+				nano(unmerged)
+		except KeyboardInterrupt:
+			pass
 
 if __name__ == "__main__":
 	main()
