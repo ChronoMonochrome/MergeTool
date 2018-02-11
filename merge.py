@@ -24,7 +24,8 @@ def startswith_any(s, l):
 def main():
 	ours_list = [i for i in open("ours.txt", "rb").read().split("\n") if i]
 	theirs_list = [i for i in open("theirs.txt", "rb").read().split("\n") if i]
-	unmerged = [i for i in open("unmerged.txt", "rb").read().split("\n") if i]
+	unmerged = subprocess.check_output("git diff --name-only --diff-filter=U".split(" ")).split("\n")
+
 	to_ours, to_theirs = [], []
 	for f in unmerged:
 		if startswith_any(f, ours_list):
@@ -45,29 +46,23 @@ def main():
 			del unmerged[unmerged.index(i)]
 	buf = ""
 
-	s = " ".join(to_ours)
-	buf += "for i in %s; do git checkout --ours $i; done; for i in %s; do git add $i; done; " % (s, s)
-	s = " ".join(to_theirs)
-	buf += "for i in %s; do git checkout --theirs $i; done; for i in %s; do git add $i; done; " % (s, s)
-	if not unmerged:
-		buf += "git commit --no-edit && "
-	else:
-		buf += "true && "
+	if to_ours:
+		s = " ".join(to_ours)
+		buf += "echo %s | xargs -L 1 git checkout --ours; echo %s | xargs -L 1 git add; " % (s, s)
 
+	if to_theirs:
+		s = " ".join(to_theirs)
+		buf += "echo %s | xargs -L 1 git checkout --theirs; echo %s | xargs -L 1 git add; " % (s, s)
+
+	if not unmerged:
+		buf += "git commit --no-edit"
 
 	s = "\n".join(unmerged)
-	open("unmerged_new.txt", "w").write(s)
-	buf += "mv unmerged_new.txt unmerged.txt"
 	print(buf)
 	bash_command(buf)
 
-	#buf += "nano %s && " % s
 	if unmerged:
 		nano(unmerged)
-	#if not unmerged:
-	#bash_command(buf)
-	#print(s)
-	#buf += "echo %s"
 
 if __name__ == "__main__":
 	main()
