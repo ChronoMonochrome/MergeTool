@@ -4,15 +4,19 @@ import os, sys
 import subprocess
 
 class bcolors:
-	HEADER = '\033[95m'
-	OKBLUE = '\033[94m'
-	OKGREEN = '\033[92m'
-	WARNING = '\033[93m'
-	ERROR = '\033[91m'
+	HEADER = '\033[35m'
+	OKBLUE = '\033[34m'
+	OKGREEN = '\033[32m'
+	WARNING = '\033[33m'
+	ERROR = '\033[31m'
 	ENDC = '\033[0m'
 	BOLD = '\033[1m'
 	UNDERLINE = '\033[4m'
 
+info_fmt = lambda s: "%s%s%s" % (bcolors.OKGREEN, s, bcolors.ENDC)
+verbose_fmt = lambda s: s
+warning_fmt = lambda s: "%s%s%s" % (bcolors.WARNING, s, bcolors.ENDC)
+#info_fmt = warning_fmt = lambda s: s
 error_fmt = lambda s: "%s%s%s" % (bcolors.ERROR, s, bcolors.ENDC)
 
 DRYRUN = {"--dry-run": "-d"}
@@ -64,10 +68,10 @@ Flags:
 The tool will do `git checkout --ours' (`git checkout --theirs')
 for any files/directories specified in ours.txt (theirs.txt).
 
-Note that flags passing like "-dv" is not supported, use "-d -v" instead.%s'''
+Note that flags passing like "-dv" is not supported, use "-d -v" instead.'''
 
 	if err_msg:
-		buf %= ("\n\n" + err_msg)
+		buf += "\n\n" + err_msg
 
 	print(buf)
 
@@ -89,7 +93,7 @@ def main(flags = []):
 
 	if not unmerged:
 		if not _flag_quiet:
-			print("No files needs merging.")
+			print(warning_fmt("No files needs merging."))
 		exit()
 
 	to_ours, to_theirs = [], []
@@ -112,19 +116,21 @@ def main(flags = []):
 			del unmerged[unmerged.index(i)]
 	buf = ""
 
+	if not _flag_quiet:
+		s = "\n\t" + "\n\t".join(to_ours)
+		print(info_fmt("Resetting the following files to ours:") + "\n%s\n" % s)
+
 	if to_ours:
 		s = " ".join(to_ours)
 		buf += "echo %s | xargs -L 1 git checkout --ours 2>/dev/null; echo %s | xargs -L 1 git add; " % (s, s)
-		if not _flag_quiet:
-			s = "\n\t" + "\n\t".join(to_ours)
-			print("Resetting the following files to ours:\n%s\n" % s)
+
+	if not _flag_quiet:
+		s = "\n\t" + "\n\t".join(to_theirs)
+		print(info_fmt("Resetting the following files to theirs:") + "\n%s\n" % s)
 
 	if to_theirs:
 		s = " ".join(to_theirs)
 		buf += "echo %s | xargs -L 1 git checkout --theirs 2>/dev/null; echo %s | xargs -L 1 git add; " % (s, s)
-		if not _flag_quiet:
-			s = "\n\t" + "\n\t".join(to_theirs)
-			print("Resetting the following files to theirs:\n%s\n" % s)
 
 	if not unmerged:
 		buf += "git commit --no-edit"
@@ -134,7 +140,7 @@ def main(flags = []):
 		bash_command(buf)
 
 	if _flag_verbose:
-		print(buf)
+		print(verbose_fmt(buf))
 
 	s = "\n\t" + "\n\t".join(unmerged)
 
