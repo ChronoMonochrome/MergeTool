@@ -19,6 +19,10 @@ warning_fmt = lambda s: "%s%s%s" % (bcolors.WARNING, s, bcolors.ENDC)
 #info_fmt = warning_fmt = lambda s: s
 error_fmt = lambda s: "%s%s%s" % (bcolors.ERROR, s, bcolors.ENDC)
 
+EDITOR = "nano"
+OURS_FILE = "ours.txt"
+THEIRS_FILE = "theirs.txt"
+
 DRYRUN = {"--dry-run": "-d"}
 VERBOSE = {"--verbose": "-v"}
 NOPROMPTS = {"--no-prompts": "-n"}
@@ -27,12 +31,27 @@ HELP = {"--help": "-h"}
 
 valid_flags = [DRYRUN, VERBOSE, QUIET, HELP, NOPROMPTS]
 
-def bash_command(cmd):
-	subprocess.Popen(cmd, shell=True, executable='/bin/bash')
+def catch():
+	__func__ = sys._getframe().f_back.f_code.co_name
+	exc_type, exc_obj, exc_tb = sys.exc_info()
+	print(error_fmt(u"%s: %s on line %d: %s" %(__func__, exc_type, exc_tb.tb_lineno, exc_obj)))
 
-def nano(files):
-	for f in files:
-		subprocess.call(['nano', f])
+def bash_command(cmd):
+	try:
+		subprocess.Popen(cmd, shell = True, executable = '/bin/bash')
+	except (subprocess.CalledProcessError, OSError) as e:
+		catch()
+		print(error_fmt("Can't execute requested command, exiting now"))
+		exit()
+
+def editor(files):
+	try:
+		for f in files:
+			subprocess.call([EDITOR, f])
+	except (subprocess.CalledProcessError, OSError) as e:
+		catch()
+		print(error_fmt("Can't start editor, exiting now"))
+		exit()
 
 def startswith_any(s, l):
 	if not s:
@@ -78,9 +97,24 @@ Note that flags passing like "-dv" is not supported, use "-d -v" instead.'''
 	exit()
 
 def main(flags = []):
-	ours_list = [i for i in open("ours.txt", "rb").read().split("\n") if i]
-	theirs_list = [i for i in open("theirs.txt", "rb").read().split("\n") if i]
-	unmerged = [i for i in subprocess.check_output("git diff --name-only --diff-filter=U".split(" ")).split("\n") if i]
+	ours_list = []
+	theirs_list = []
+
+	if os.path.isfile(OURS_FILE):
+		ours_list = [i for i in open(OURS_FILE, "r").read().split("\n") if i]
+	else:
+		print(warning_fmt("Warning: no ours file (%s) found" % OURS_FILE))
+
+	if os.path.isfile(THEIRS_FILE):
+		theirs_list = [i for i in open(THEIRS_FILE, "r").read().split("\n") if i]
+	else:
+		print(warning_fmt("Warning: no theirs file (%s) found" % THEIRS_FILE))
+
+	try:
+		unmerged = [i for i in subprocess.check_output("git diff --name-only --diff-filter=U".split(" ")).split("\n") if i]
+	except (subprocess.CalledProcessError, OSError) as e:
+		catch()
+		exit()
 
 	_flag_quiet = QUIET in flags
 	_flag_verbose = VERBOSE in flags
@@ -145,15 +179,15 @@ def main(flags = []):
 	s = "\n\t" + "\n\t".join(unmerged)
 
 	if not (_flag_dryrun or _flag_quiet) and unmerged:
-		print("The following files needs merging: \n%s\n" % s)
+		print(info_fmt("The following files needs merging:") + " \n%s\n" % s)
 		try:
-			_start_nano = "y"
+			_start_editor = "y"
 
 			if not _flag_noprompts:
-				_start_nano = raw_input("Do you want to open these files in nano? [y]/n\n")
+				_start_editor = raw_input(warning_fmt("Do you want to open these files in editor? [y]/n\n"))
 
-			if _start_nano != "n":
-				nano(unmerged)
+			if _start_editor != "n":
+				editor(unmerged)
 		except KeyboardInterrupt:
 			pass
 
