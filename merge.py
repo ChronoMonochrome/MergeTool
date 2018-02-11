@@ -4,9 +4,10 @@ import os, sys
 import subprocess
 
 DRYRUN = {"--dry-run": "-d"}
+VERBOSE = {"--verbose": "-v"}
 QUIET = {"--quiet": "-q"}
 
-valid_flags = [DRYRUN, QUIET]
+valid_flags = [DRYRUN, VERBOSE, QUIET]
 
 def bash_command(cmd):
 	subprocess.Popen(cmd, shell=True, executable='/bin/bash')
@@ -33,6 +34,7 @@ def main(flags = []):
 	unmerged = [i for i in subprocess.check_output("git diff --name-only --diff-filter=U".split(" ")).split("\n") if i]
 
 	_flag_quiet = QUIET in flags
+	_flag_verbose = VERBOSE in flags
 	_flag_dryrun = DRYRUN in flags
 
 	if not unmerged:
@@ -62,22 +64,29 @@ def main(flags = []):
 
 	if to_ours:
 		s = " ".join(to_ours)
-		buf += "echo %s | xargs -L 1 git checkout --ours; echo %s | xargs -L 1 git add; " % (s, s)
+		buf += "echo %s | xargs -L 1 git checkout --ours 2>/dev/null; echo %s | xargs -L 1 git add; " % (s, s)
+		if not _flag_quiet:
+			s = "\n\t" + "\n\t".join(to_ours)
+			print("Resetting the following files to ours:\n%s\n" % s)
 
 	if to_theirs:
 		s = " ".join(to_theirs)
-		buf += "echo %s | xargs -L 1 git checkout --theirs; echo %s | xargs -L 1 git add; " % (s, s)
+		buf += "echo %s | xargs -L 1 git checkout --theirs 2>/dev/null; echo %s | xargs -L 1 git add; " % (s, s)
+		if not _flag_quiet:
+			s = "\n\t" + "\n\t".join(to_theirs)
+			print("Resetting the following files to theirs:\n%s\n" % s)
 
 	if not unmerged:
 		buf += "git commit --no-edit"
 
-	s = "\n\t" + "\n\t".join(unmerged)
 
 	if not _flag_dryrun:
 		bash_command(buf)
-	elif not _flag_quiet:
+
+	if _flag_verbose:
 		print(buf)
 
+	s = "\n\t" + "\n\t".join(unmerged)
 
 	if not (_flag_dryrun or _flag_quiet) and unmerged:
 		print("The following files needs merging: \n%s\n" % s)
