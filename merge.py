@@ -84,8 +84,8 @@ Flags:
  -v, --verbose    - verbose output.
 
 
-The tool will do `git checkout --ours' (`git checkout --theirs')
-for any files/directories specified in ours.txt (theirs.txt).
+The tool will do `git checkout --ours` (`git checkout --theirs`)
+for any unmerged files/directories specified in ours.txt (theirs.txt).
 
 Note that flags passing like "-dv" is not supported, use "-d -v" instead.'''
 
